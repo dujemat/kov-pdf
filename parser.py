@@ -8,66 +8,60 @@ from pypdf import PdfReader
 
 st.set_page_config(page_title="PDF Parser", layout="wide")
 st.title("PDF Parser")
-st.write("Učitaj PDF dokument i aplikacija će pokušati izvući stavke i podstavke, prikazati ih kao JSON i u tabličnom formatu.")
+st.write("Učitaj PDF dokument i aplikacija će pokušati izvući stavke i podstavke.")
 
 
 # --------------------------------------------------
-# PARSER LOGIC
+# BASIC HELPERS
 # --------------------------------------------------
 
 def normalize_line(line: str) -> str:
     return line.replace("\xa0", " ").strip()
 
 
-def canonical(text: str) -> str:
-    text = text.lower()
-    text = re.sub(r"\s+", "", text)
-    text = re.sub(r"[^a-z0-9čćžšđ]", "", text)
-    return text
-
-
 def is_code_token(token: str) -> bool:
-    return bool(re.match(r"^[A-Z0-9()/.:-]+$", token))
+    # fleksibilnije – mora imati broj i biti uppercase-ish
+    return any(c.isdigit() for c in token)
 
 
 def split_head(head: str):
     tokens = head.split()
 
     pos_tokens = []
+    naziv_tokens = []
+
     i = 0
 
-    while i < len(tokens) and is_code_token(tokens[i]):
-        pos_tokens.append(tokens[i])
+    # uzmi sve dok ima broj ili izgleda kao kod
+    while i < len(tokens):
+        t = tokens[i]
+
+        # ako ima broj → dio pozicije
+        if any(c.isdigit() for c in t):
+            pos_tokens.append(t)
+
+        # ako je 1 slovo (npr. N, G, itd.) → također dio pozicije
+        elif len(t) == 1 and t.isalpha():
+            pos_tokens.append(t)
+
+        else:
+            break
+
         i += 1
 
-    if not pos_tokens:
-        return None, head.strip()
+    naziv_tokens = tokens[i:]
 
-    pozicija = " ".join(pos_tokens).strip()
-    naziv = " ".join(tokens[i:]).strip()
+    pozicija = " ".join(pos_tokens) if pos_tokens else None
+    naziv = " ".join(naziv_tokens)
 
     return pozicija, naziv
 
 
-MAIN_LINE_RE = re.compile(
-    r"^(?P<head>.+?)\s+"
-    r"(?P<kolicina>\d+,\d+)\s+"
-    r"(?P<jed_mj>\w+)\s+"
-    r"(?P<cijena>\d+,\d+)\s+"
-    r"(?P<vrijednost>\d+,\d+)\s+"
-    r"(?:(?P<rabat>\d+,\d+)\s+)?"
-    r"(?P<stopa_pdv>#\d+)\s+"
-    r"(?P<porezna_osnovica>\d+,\d+)$"
-)
+# --------------------------------------------------
+# PDF READING
+# --------------------------------------------------
 
-SUB_LINE_RE = re.compile(
-    r"^(?P<head>.+?)\s+"
-    r"(?P<kolicina>\d+,\d+)\s+"
-    r"(?P<jed_mj>\w+)$"
-)
-
-
-def read_pdf_lines_from_upload(uploaded_file) -> list[str]:
+def read_pdf_lines(uploaded_file):
     reader = PdfReader(uploaded_file)
     lines = []
 
@@ -82,57 +76,50 @@ def read_pdf_lines_from_upload(uploaded_file) -> list[str]:
     return lines
 
 
-def validate_pdf_structure(lines: list[str]) -> None:
-    joined = "\n".join(lines)
-    c = canonical(joined)
+# --------------------------------------------------
+# MERGE BROKEN LINES (KEY FIX)
+# --------------------------------------------------
 
-    if "pozicija" not in c or "naziv" not in c:
-        raise ValueError(
-            "PDF nema očekivanu tablicu stavki. Nisu pronađeni osnovni stupci 'Pozicija' i 'Naziv'."
-        )
+def merge_lines(lines):
+    merged = []
+    buffer = ""
 
+    for line in lines:
+        # nova stavka ako počinje s (01) ili kodom
+        if re.match(r"^\(?\d{2}\)?", line):
+            if buffer:
+                merged.append(buffer.strip())
+            buffer = line
+        else:
+            buffer += " " + line
 
-def extract_table_lines_from_upload(uploaded_file) -> list[str]:
-    all_lines = read_pdf_lines_from_upload(uploaded_file)
-    validate_pdf_structure(all_lines)
+    if buffer:
+        merged.append(buffer.strip())
 
-    lines = []
-    in_table = False
-
-    for line in all_lines:
-        c = canonical(line)
-
-        if "pozicija" in c and "naziv" in c:
-            in_table = True
-            continue
-
-        if not in_table:
-            continue
-
-        if "rekapitulacijaporeza" in c or "ukupnoeur" in c:
-            break
-
-        if c in {
-            "jedmj",
-            "cijenavrijednostkolxcij",
-            "rabatstopa",
-            "pdva",
-            "porezna",
-            "osnovica",
-            "kolicinajedmjcijenavrijednostrabatstopapdvaporeznaosnovica",
-        }:
-            continue
-
-        lines.append(line)
-
-    if not lines:
-        raise ValueError("Tablica je pronađena, ali nijedan red nije izdvojen.")
-
-    return lines
+    return merged
 
 
-def parse_line(line: str):
-    m = MAIN_LINE_RE.match(line)
+# --------------------------------------------------
+# PARSING
+# --------------------------------------------------
+
+MAIN_RE = re.compile(
+    r"^(?P<head>.+?)\s+"
+    r"(?P<kolicina>\d+,\d+)\s+"
+    r"(?P<jed_mj>\w+)\s+"
+    r"(?P<cijena>\d+,\d+)\s+"
+    r"(?P<vrijednost>\d+,\d+)"
+)
+
+SUB_RE = re.compile(
+    r"^(?P<head>.+?)\s+"
+    r"(?P<kolicina>\d+,\d+)\s+"
+    r"(?P<jed_mj>\w+)$"
+)
+
+
+def parse_line(line):
+    m = MAIN_RE.match(line)
 
     if m:
         pozicija, naziv = split_head(m.group("head"))
@@ -145,12 +132,9 @@ def parse_line(line: str):
             "jed_mj": m.group("jed_mj"),
             "cijena": m.group("cijena"),
             "vrijednost": m.group("vrijednost"),
-            "rabat": m.group("rabat"),
-            "stopa_pdv": m.group("stopa_pdv"),
-            "porezna_osnovica": m.group("porezna_osnovica"),
         }
 
-    m = SUB_LINE_RE.match(line)
+    m = SUB_RE.match(line)
 
     if m:
         pozicija, naziv = split_head(m.group("head"))
@@ -163,85 +147,75 @@ def parse_line(line: str):
             "jed_mj": m.group("jed_mj"),
             "cijena": None,
             "vrijednost": None,
-            "rabat": None,
-            "stopa_pdv": None,
-            "porezna_osnovica": None,
         }
 
     return None
 
 
-def parse_uploaded_pdf(uploaded_file) -> dict:
-    lines = extract_table_lines_from_upload(uploaded_file)
+# --------------------------------------------------
+# MAIN PARSER
+# --------------------------------------------------
+
+def parse_pdf(uploaded_file):
+    lines = read_pdf_lines(uploaded_file)
+    lines = merge_lines(lines)
 
     stavke = []
-    neparsirani_redovi = []
-    current_item = None
+    current = None
+    neparsirani = []
 
     for line in lines:
         parsed = parse_line(line)
 
-        if parsed is None:
-            neparsirani_redovi.append(line)
+        if not parsed:
+            neparsirani.append(line)
             continue
 
         if parsed["type"] == "stavka":
             parsed.pop("type")
             parsed["podstavke"] = []
             stavke.append(parsed)
-            current_item = parsed
+            current = parsed
+
         else:
             parsed.pop("type")
 
-            if current_item is None:
-                raise ValueError("Podstavka je pronađena prije glavne stavke.")
-
-            current_item["podstavke"].append(parsed)
-
-    if not stavke:
-        raise ValueError(
-            "Nijedna stavka nije uspješno parsirana. PDF možda nema očekivani raspored stupaca."
-        )
+            if current:
+                current["podstavke"].append(parsed)
 
     return {
         "stavke": stavke,
-        "neparsirani_redovi": neparsirani_redovi
+        "neparsirani_redovi": neparsirani
     }
 
 
 # --------------------------------------------------
-# TABLE PREP
+# TABLE VIEW
 # --------------------------------------------------
 
-def flatten_for_table(parsed_json: dict) -> list[dict]:
+def flatten(parsed):
     rows = []
 
-    for stavka in parsed_json["stavke"]:
+    for s in parsed["stavke"]:
         rows.append({
             "tip": "stavka",
-            "pozicija": stavka.get("pozicija"),
-            "naziv": stavka.get("naziv"),
-            "kolicina": stavka.get("kolicina"),
-            "jed_mj": stavka.get("jed_mj"),
-            "cijena": stavka.get("cijena"),
-            "vrijednost": stavka.get("vrijednost"),
-            "rabat": stavka.get("rabat"),
-            "stopa_pdv": stavka.get("stopa_pdv"),
-            "porezna_osnovica": stavka.get("porezna_osnovica"),
+            "pozicija": s["pozicija"],
+            "naziv": s["naziv"],
+            "kolicina": s["kolicina"],
+            "jed_mj": s["jed_mj"],
+            "cijena": s["cijena"],
+            "vrijednost": s["vrijednost"],
         })
 
-        for podstavka in stavka.get("podstavke", []):
+        for p in s["podstavke"]:
             rows.append({
                 "tip": "podstavka",
-                "pozicija": podstavka.get("pozicija"),
-                "naziv": f"↳ {podstavka.get('naziv')}",
-                "kolicina": podstavka.get("kolicina"),
-                "jed_mj": podstavka.get("jed_mj"),
-                "cijena": podstavka.get("cijena"),
-                "vrijednost": podstavka.get("vrijednost"),
-                "rabat": podstavka.get("rabat"),
-                "stopa_pdv": podstavka.get("stopa_pdv"),
-                "porezna_osnovica": podstavka.get("porezna_osnovica"),
+                "pozicija": p["pozicija"],
+                "naziv": "↳ " + p["naziv"],
+                "kolicina": p["kolicina"],
+                "jed_mj": p["jed_mj"],
+                "cijena": p["cijena"],
+                "vrijednost": p["vrijednost"],
             })
 
     return rows
@@ -251,37 +225,27 @@ def flatten_for_table(parsed_json: dict) -> list[dict]:
 # UI
 # --------------------------------------------------
 
-uploaded_file = st.file_uploader("Učitaj PDF dokument", type=["pdf"])
+uploaded_file = st.file_uploader("Učitaj PDF", type=["pdf"])
 
-if uploaded_file is None:
-    st.info("Za početak učitaj PDF dokument.")
-else:
+if uploaded_file:
     try:
-        parsed = parse_uploaded_pdf(uploaded_file)
+        parsed = parse_pdf(uploaded_file)
 
-        st.success("PDF je uspješno obrađen.")
+        st.success("Parsiranje gotovo")
 
-        json_string = json.dumps(parsed, ensure_ascii=False, indent=2)
-        rows = flatten_for_table(parsed)
-        df = pd.DataFrame(rows)
+        json_str = json.dumps(parsed, ensure_ascii=False, indent=2)
+        df = pd.DataFrame(flatten(parsed))
 
-        st.subheader("JSON prikaz")
-        st.code(json_string, language="json")
+        st.subheader("JSON")
+        st.code(json_str, language="json")
 
-        st.subheader("Tablični prikaz")
-        st.dataframe(df, use_container_width=True, hide_index=True)
+        st.subheader("Tablica")
+        st.dataframe(df, use_container_width=True)
 
-        st.download_button(
-            label="Preuzmi JSON datoteku",
-            data=json_string.encode("utf-8"),
-            file_name=Path(uploaded_file.name).with_suffix(".json").name,
-            mime="application/json",
-        )
-
-        if parsed.get("neparsirani_redovi"):
+        if parsed["neparsirani_redovi"]:
             with st.expander("Neparsirani redovi"):
-                for line in parsed["neparsirani_redovi"]:
-                    st.write(line)
+                for l in parsed["neparsirani_redovi"]:
+                    st.write(l)
 
     except Exception as e:
-        st.error(f"Greška: {e}")
+        st.error(str(e))
