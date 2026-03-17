@@ -1,0 +1,182 @@
+{
+  "stavke": [
+    {
+      "pozicija": "0109 91334",
+      "naziv": "Inspekcijski servis sa zamjenom ulja (fl",
+      "kolicina": "1,00",
+      "jed_mj": "kom",
+      "cijena": "173,02",
+      "vrijednost": "173,02",
+      "rabat": null,
+      "stopa_pdv": "#6",
+      "porezna_osnovica": "173,02",
+      "podstavke": [
+        {
+          "pozicija": "01090033",
+          "naziv": "Insp.servis sa zamj.ulja (fleksibilni)",
+          "kolicina": "1,50",
+          "jed_mj": "h",
+          "cijena": null,
+          "vrijednost": null,
+          "rabat": null,
+          "stopa_pdv": null,
+          "porezna_osnovica": null
+        },
+        {
+          "pozicija": "(01) N 0138158",
+          "naziv": "Brtveni prsten",
+          "kolicina": "1,00",
+          "jed_mj": "kom",
+          "cijena": null,
+          "vrijednost": null,
+          "rabat": null,
+          "stopa_pdv": null,
+          "porezna_osnovica": null
+        },
+        {
+          "pozicija": "(01) 04E115561AC",
+          "naziv": "Filter ulja",
+          "kolicina": "1,00",
+          "jed_mj": "kom",
+          "cijena": null,
+          "vrijednost": null,
+          "rabat": null,
+          "stopa_pdv": null,
+          "porezna_osnovica": null
+        },
+        {
+          "pozicija": "OIL001",
+          "naziv": "Motorno ulje 5w30",
+          "kolicina": "4,00",
+          "jed_mj": "l",
+          "cijena": null,
+          "vrijednost": null,
+          "rabat": null,
+          "stopa_pdv": null,
+          "porezna_osnovica": null
+        }
+      ]
+    },
+    {
+      "pozicija": "9811 32341",
+      "naziv": "Dodatni rad: zamjena kočione tekućine 3",
+      "kolicina": "1,00",
+      "jed_mj": "kom",
+      "cijena": "32,80",
+      "vrijednost": "32,80",
+      "rabat": null,
+      "stopa_pdv": "#6",
+      "porezna_osnovica": "32,80",
+      "podstavke": [
+        {
+          "pozicija": "01400050",
+          "naziv": "Zamjena kocione tekucine",
+          "kolicina": "0,30",
+          "jed_mj": "h",
+          "cijena": null,
+          "vrijednost": null,
+          "rabat": null,
+          "stopa_pdv": null,
+          "porezna_osnovica": null
+        },
+        {
+          "pozicija": "30010750",
+          "naziv": "Sustav spojke odzrac",
+          "kolicina": "0,20",
+          "jed_mj": "h",
+          "cijena": null,
+          "vrijednost": null,
+          "rabat": null,
+          "stopa_pdv": null,
+          "porezna_osnovica": null
+        },
+        {
+          "pozicija": "(01) B 000750M31",
+          "naziv": "Kočiono ulje",
+          "kolicina": "1,15",
+          "jed_mj": "kom",
+          "cijena": null,
+          "vrijednost": null,
+          "rabat": null,
+          "stopa_pdv": null,
+          "porezna_osnovica": null
+        }
+      ]
+    },
+    {
+      "pozicija": "9860 32352",
+      "naziv": "Dodatni rad: zamjena filtra za pelud 60.",
+      "kolicina": "1,00",
+      "jed_mj": "kom",
+      "cijena": "28,61",
+      "vrijednost": "28,61",
+      "rabat": null,
+      "stopa_pdv": "#6",
+      "porezna_osnovica": "28,61",
+      "podstavke": [
+        {
+          "pozicija": "85181950",
+          "naziv": "Filtar za prasinu i pelud demont.i mont",
+          "kolicina": "0,10",
+          "jed_mj": "h",
+          "cijena": null,
+          "vrijednost": null,
+          "rabat": null,
+          "stopa_pdv": null,
+          "porezna_osnovica": null
+        },
+        {
+          "pozicija": "(01) 6R0819653",
+          "naziv": "Umetak filtra s filtriran",
+          "kolicina": "1,00",
+          "jed_mj": "kom",
+          "cijena": null,
+          "vrijednost": null,
+          "rabat": null,
+          "stopa_pdv": null,
+          "porezna_osnovica": null
+        }
+      ]
+    },
+    {
+      "pozicija": "01500000",
+      "naziv": "GFS-vodjena funkcija",
+      "kolicina": "0,20",
+      "jed_mj": "h",
+      "cijena": "38,00",
+      "vrijednost": "7,60",
+      "rabat": null,
+      "stopa_pdv": "#6",
+      "porezna_osnovica": "7,60",
+      "podstavke": []
+    },
+    {
+      "pozicija": "27068950",
+      "naziv": "Akumulator napunj",
+      "kolicina": "0,10",
+      "jed_mj": "h",
+      "cijena": "38,00",
+      "vrijednost": "3,80",
+      "rabat": null,
+      "stopa_pdv": "#6",
+      "porezna_osnovica": "3,80",
+      "podstavke": []
+    },
+    {
+      "pozicija": "(01) N 90288901",
+      "naziv": "Vijak za ispuštanje ulja",
+      "kolicina": "1,00",
+      "jed_mj": "kom",
+      "cijena": "5,25",
+      "vrijednost": "5,25",
+      "rabat": null,
+      "stopa_pdv": "#6",
+      "porezna_osnovica": "5,25",
+      "podstavke": []
+    }
+  ],
+  "neparsirani_redovi": [
+    "(01) Audi originalni dijelovi ® / pribor",
+    "Provjerena kvaliteta u koju se možete pouzdati."
+  ]
+}
